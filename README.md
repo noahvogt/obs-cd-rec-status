@@ -23,7 +23,7 @@ It then adds a dock on the obs studio interface titled *CD Rec Status* that disp
 
 ## Building
 - checkout the [obs studio](https://github.com/obsproject/obs-studio) repository
-- `cd ../../../UI/frontend-plugins/CMakeLists.txt`
+- `cd UI/frontend-plugins`
 - run `git clone https://github.com/noahvogt/obs-cd-rec-status.git cd-rec-status`
 - add the following line to the `CMakeLists.txt` file: `add_subdirectory(cd-rec-status)`
 - follow the [offical obs build instructions](https://github.com/obsproject/obs-studio/wiki/Install-Instructions#building-obs-studio) for your prefered platform
