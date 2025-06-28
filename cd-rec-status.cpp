@@ -1,40 +1,68 @@
 #include <obs-module.h>
 #include <obs-frontend-api.h>
 #include <QLabel>
-#include <QFile>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QDockWidget>
+#include <QWebSocket>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 OBS_DECLARE_MODULE()
-OBS_MODULE_USE_DEFAULT_LOCALE("show_cd_rec_status", "en-US")
+OBS_MODULE_USE_DEFAULT_LOCALE("cd-rec-status", "en-US")
 
 class CDStatusDock : public QWidget {
 public:
-    CDStatusDock(QWidget *parent = nullptr) : QWidget(parent) {
+    CDStatusDock(QWidget *parent = nullptr) : QWidget(parent), socket(new QWebSocket()) {
         QVBoxLayout *layout = new QVBoxLayout(this);
-        statusLabel = new QLabel("Loading...", this);
+        statusLabel = new QLabel("Connecting to server...", this);
         layout->addWidget(statusLabel);
         setLayout(layout);
 
-        QTimer *timer = new QTimer(this);
-        connect(timer, &QTimer::timeout, this, &CDStatusDock::updateStatus);
-        timer->start(1000);
+        connect(socket, &QWebSocket::connected, this, &CDStatusDock::onConnected);
+        connect(socket, &QWebSocket::disconnected, this, &CDStatusDock::onDisconnected);
+        connect(socket, &QWebSocket::textMessageReceived, this, &CDStatusDock::onMessageReceived);
+
+        socket->open(QUrl(QStringLiteral("ws://localhost:8765")));
+    }
+
+    ~CDStatusDock() {
+        socket->close();
+        delete socket;
+    }
+
+private slots:
+    void onConnected() {
+        statusLabel->setText("Connected to status server");
+    }
+
+    void onDisconnected() {
+        statusLabel->setText("Disconnected from server");
+    }
+
+    void onMessageReceived(const QString &message) {
+        QJsonParseError parseError;
+        QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8(), &parseError);
+        if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
+            statusLabel->setText("Invalid status message");
+            return;
+        }
+
+        QJsonObject obj = doc.object();
+        QString statusText = QString("Recording: %1\nCD: %2\nTrack: %3\nElapsed CD Time: %4\nElapsed Track Time: %5")
+                                .arg(obj["recording"].toBool() ? "Yes" : "No")
+                                .arg(obj["cd"].toInt())
+                                .arg(obj["track"].toInt())
+                                .arg(obj["cd_time"].toString())
+                                .arg(obj["track_time"].toString());
+
+        statusLabel->setText(statusText);
     }
 
 private:
     QLabel *statusLabel;
-
-    void updateStatus() {
-        QFile f("/tmp/cd_status.txt");
-        if (f.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QString text = f.readAll();
-            statusLabel->setText(text);
-        } else {
-            statusLabel->setText("Status file not found");
-        }
-    }
+    QWebSocket *socket;
 };
 
 static void *create_cd_status_dock(obs_source_t *) {
@@ -55,10 +83,10 @@ bool obs_module_load(void)
 
 MODULE_EXPORT const char *obs_module_description(void)
 {
-	return obs_module_text("Description");
+    return obs_module_text("Description");
 }
 
 MODULE_EXPORT const char *obs_module_name(void)
 {
-	return obs_module_text("CD Rec Status");
+    return obs_module_text("CD Rec Status");
 }
