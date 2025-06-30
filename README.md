@@ -7,19 +7,20 @@ An [OBS](https://github.com/obsproject/obs-studio) plugin to display the status 
 The [offical obs plugin template](https://github.com/obsproject/obs-plugintemplate) was used to create this plugin.
 
 ## How it works
-
 This plugin listens in on a WebSocket server on `ws://localhost:8765` from which it receives messages like:
 ```json
 {
   "recording": true,
   "cd": 3,
   "track": 7,
-  "cd_time": "00:12:03",
-  "track_time": "00:01:26"
+  "cd_time": "12:03",
+  "track_time": "01:26"
 }
 ```
-It then adds a dock on the obs studio interface titled *CD Rec Status* that displays the state of the (ongoing) cd recording.
 
+An example implemtation of such a websocket can be found [here](https://github.com/noahvogt/slidegen/blob/master/cd_recording_status_websocket.py).
+
+It then adds a dock on the obs studio interface titled *CD Rec Status* that displays the state of the (ongoing) cd recording.
 
 ## Building
 - checkout the [obs studio](https://github.com/obsproject/obs-studio) repository
