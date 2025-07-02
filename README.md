@@ -35,3 +35,5 @@ You now have compiled OBS with the plugin. But you probably don't want to rebuil
 Possible changes in future releases:
 - add de locale
 - allow the configuration of hostname + port of the websocket via the obs gui
+- better text styling than just QLabels
+- add github workflow to automatically compile a new release (when needed by a new flatpak platform)
