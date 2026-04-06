@@ -33,15 +33,15 @@ jobs:
               "sdk": "org.freedesktop.Sdk//25.08",
               "build-extension": true,
               "build-options": {
-                  "prefix": "/app/plugins/cd-rec-status"
+                  "prefix": "/app/plugins/cd-rec-status",
+                  "env": {
+                      "CMAKE_PREFIX_PATH": "/app/plugins/cd-rec-status:/app"
+                  }
               },
               "modules": [
                   {
                       "name": "qtwebsockets",
                       "buildsystem": "cmake-ninja",
-                      "build-options": {
-                          "prefix": "/app/plugins/cd-rec-status/qtws"
-                      },
                       "sources": [
                           {
                               "type": "archive",
@@ -52,10 +52,11 @@ jobs:
                   },
                   {
                       "name": "cd-rec-status",
-                      "buildsystem": "simple",
-                      "build-commands": [
-                          "cmake -B build -G Ninja -DENABLE_FRONTEND_API=ON -DENABLE_QT=ON -DCMAKE_PREFIX_PATH=/app -DQt6WebSockets_DIR=/app/plugins/cd-rec-status/qtws/lib/cmake/Qt6WebSockets",
-                          "cmake --build build"
+                      "buildsystem": "cmake-ninja",
+                      "builddir": true,
+                      "config-opts": [
+                          "-DENABLE_FRONTEND_API=ON",
+                          "-DENABLE_QT=ON"
                       ],
                       "sources": [
                           {
