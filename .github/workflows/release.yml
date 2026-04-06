@@ -16,7 +16,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Flatpak & Utilities
+      - name: Install Flatpak & flatpak-builder
         run: |
           sudo apt-get update
           sudo apt-get install -y flatpak flatpak-builder patchelf
@@ -33,10 +33,7 @@ jobs:
               "sdk": "org.freedesktop.Sdk//25.08",
               "build-extension": true,
               "build-options": {
-                  "prefix": "/app/plugins/cd-rec-status",
-                  "env": {
-                      "CMAKE_PREFIX_PATH": "/app/plugins/cd-rec-status:/app"
-                  }
+                  "prefix": "/app/plugins/cd-rec-status"
               },
               "modules": [
                   {
@@ -52,11 +49,10 @@ jobs:
                   },
                   {
                       "name": "cd-rec-status",
-                      "buildsystem": "cmake-ninja",
-                      "builddir": true,
-                      "config-opts": [
-                          "-DENABLE_FRONTEND_API=ON",
-                          "-DENABLE_QT=ON"
+                      "buildsystem": "simple",
+                      "build-commands": [
+                          "cmake -B build -G Ninja -DENABLE_FRONTEND_API=ON -DENABLE_QT=ON -DCMAKE_PREFIX_PATH=/app -DQt6WebSockets_DIR=/app/plugins/cd-rec-status/lib/cmake/Qt6WebSockets",
+                          "cmake --build build"
                       ],
                       "sources": [
                           {
@@ -76,15 +72,15 @@ jobs:
         run: |
           mkdir -p release_package/cd-rec-status/bin/64bit
           mkdir -p release_package/cd-rec-status/data
-          
+
           find .flatpak-builder/build/cd-rec-status-* -name "cd-rec-status.so" -exec cp {} release_package/cd-rec-status/bin/64bit/ \;
 
           find .flatpak-builder/build/qtwebsockets-* -name "libQt6WebSockets.so*" -exec cp -a {} release_package/cd-rec-status/bin/64bit/ \;
 
           patchelf --force-rpath --set-rpath '$ORIGIN' release_package/cd-rec-status/bin/64bit/cd-rec-status.so
-          
+
           cp -r data/* release_package/cd-rec-status/data/
-          
+
           cd release_package
           tar -czvf ../cd-rec-status-linux-x86_64.tar.gz .
 
