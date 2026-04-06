@@ -57,7 +57,7 @@ jobs:
                       "config-opts": [
                           "-DENABLE_FRONTEND_API=ON",
                           "-DENABLE_QT=ON",
-                          "-DCMAKE_PREFIX_PATH=/app/plugins/cd-rec-status/qtws"
+                          "-DQt6WebSockets_DIR=/app/plugins/cd-rec-status/qtws/lib/cmake/Qt6WebSockets"
                       ],
                       "sources": [
                           {
