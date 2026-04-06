@@ -12,34 +12,64 @@ jobs:
   build-linux:
     name: Build on Ubuntu
     runs-on: ubuntu-latest
-    steps:
+steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install Flatpak & flatpak-builder
         run: |
-          # Add the official OBS Studio PPA to get the latest libobs-dev
-          sudo add-apt-repository ppa:obsproject/obs-studio -y
           sudo apt-get update
-          
-          # Install Ninja, ccache, OBS headers, and Qt6 (Core, Widgets, WebSockets)
-          sudo apt-get install -y \
-            ninja-build \
-            ccache \
-            libobs-dev \
-            qt6-base-dev \
-            libqt6websockets6-dev
+          sudo apt-get install -y flatpak flatpak-builder
+          flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
-      - name: Configure CMake
-        run: cmake --preset ubuntu-ci-x86_64
+      - name: Create Flatpak Manifest
+        run: |
+          # This JSON file tells flatpak-builder exactly how to compile the plugin 
+          # against the OBS Studio runtime.
+          cat <<EOF > plugin.json
+          {
+              "id": "com.obsproject.Studio.Plugin.CDRecStatus",
+              "branch": "stable",
+              "runtime": "com.obsproject.Studio",
+              "runtime-version": "stable",
+              "sdk": "org.freedesktop.Sdk//25.08",
+              "build-extension": true,
+              "build-options": {
+                  "prefix": "/app/plugins/cd-rec-status"
+              },
+              "modules": [
+                  {
+                      "name": "cd-rec-status",
+                      "buildsystem": "cmake-ninja",
+                      "config-opts": [
+                          "-DENABLE_FRONTEND_API=ON",
+                          "-DENABLE_QT=ON"
+                      ],
+                      "sources": [
+                          {
+                              "type": "dir",
+                              "path": "."
+                          }
+                      ]
+                  }
+              ]
+          }
+          EOF
 
-      - name: Build Plugin
-        run: cmake --build --preset ubuntu-ci-x86_64
+      - name: Build Plugin in Flatpak Sandbox
+        run: flatpak-builder --user --install-deps-from=flathub --force-clean build-dir plugin.json
 
       - name: Package Artifacts
         run: |
-          cd build_x86_64/rundir/RelWithDebInfo
-          tar -czvf ../../../cd-rec-status-linux-x86_64.tar.gz .
+          mkdir -p release_package/cd-rec-status/bin/64bit
+          mkdir -p release_package/cd-rec-status/data
+          
+          find .flatpak-builder/build/ -name "cd-rec-status.so" -exec cp {} release_package/cd-rec-status/bin/64bit/ \;
+          
+          cp -r data/* release_package/cd-rec-status/data/
+          
+          cd release_package
+          tar -czvf ../cd-rec-status-linux-x86_64.tar.gz .
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
