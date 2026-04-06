@@ -14,7 +14,8 @@ set(CMAKE_PROJECT_NAME cd-rec-status)
 add_library(${CMAKE_PROJECT_NAME} MODULE ${SOURCES})
 
 find_package(obs-frontend-api REQUIRED)
-find_package(Qt6 COMPONENTS Widgets Core WebSockets)
+find_package(Qt6 COMPONENTS Widgets Core)
+find_package(Qt6WebSockets REQUIRED)
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
   OBS::libobs
