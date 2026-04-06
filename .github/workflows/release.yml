@@ -32,9 +32,6 @@ jobs:
               "runtime-version": "stable",
               "sdk": "org.freedesktop.Sdk//25.08",
               "build-extension": true,
-              "build-options": {
-                  "prefix": "/app/plugins/cd-rec-status"
-              },
               "modules": [
                   {
                       "name": "qtwebsockets",
