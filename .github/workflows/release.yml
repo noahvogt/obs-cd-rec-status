@@ -23,6 +23,7 @@ jobs:
           flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
       - name: Create Flatpak Manifest
+- name: Create Flatpak Manifest
         run: |
           cat <<EOF > plugin.json
           {
@@ -33,10 +34,7 @@ jobs:
               "sdk": "org.freedesktop.Sdk//25.08",
               "build-extension": true,
               "build-options": {
-                  "prefix": "/app/plugins/cd-rec-status",
-                  "env": {
-                      "CMAKE_PREFIX_PATH": "/app/plugins/cd-rec-status:/app"
-                  }
+                  "prefix": "/app/plugins/cd-rec-status"
               },
               "modules": [
                   {
@@ -56,7 +54,8 @@ jobs:
                       "builddir": true,
                       "config-opts": [
                           "-DENABLE_FRONTEND_API=ON",
-                          "-DENABLE_QT=ON"
+                          "-DENABLE_QT=ON",
+                          "-DQt6WebSockets_DIR=/app/plugins/cd-rec-status/lib/cmake/Qt6WebSockets"
                       ],
                       "sources": [
                           {
