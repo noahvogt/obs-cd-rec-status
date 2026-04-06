@@ -31,4 +31,4 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${SOURCES})
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
   "${CMAKE_SOURCE_DIR}/UI/obs-frontend-api")
-set_target_properties_obs(${CMAKE_PROJECT_NAME} PROPERTIES FOLDER "plugins/noahvogt" PREFIX "")
+set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES FOLDER "plugins/noahvogt" PREFIX "")
