@@ -18,11 +18,24 @@ jobs:
 
       - name: Install dependencies
         run: |
+          # Add the official OBS Studio PPA to get the latest libobs-dev
+          sudo add-apt-repository ppa:obsproject/obs-studio -y
           sudo apt-get update
-          sudo apt-get install -y ninja-build libgl1-mesa-dev libegl1-mesa-dev
+          
+          # Install Ninja, ccache, OBS headers, and Qt6 (Core, Widgets, WebSockets)
+          sudo apt-get install -y \
+            ninja-build \
+            ccache \
+            libobs-dev \
+            qt6-base-dev \
+            libqt6websockets6-dev
 
       - name: Configure CMake
-        run: cmake --preset ubuntu-ci-x86_64
+        # Override the preset defaults so CMake knows to look for the Frontend API and Qt
+        run: >
+          cmake --preset ubuntu-ci-x86_64
+          -DENABLE_FRONTEND_API=ON
+          -DENABLE_QT=ON
 
       - name: Build Plugin
         run: cmake --build --preset ubuntu-ci-x86_64
