@@ -12,7 +12,6 @@
 #include <mutex>
 #include <chrono>
 
-#define ASIO_STANDALONE
 #include <websocketpp/config/asio_no_tls_client.hpp>
 #include <websocketpp/client.hpp>
 
@@ -23,7 +22,6 @@ OBS_DECLARE_MODULE()
 OBS_MODULE_USE_DEFAULT_LOCALE("cd-rec-status", "en-US")
 
 class CDStatusDock : public QWidget {
-    Q_OBJECT
 public:
     CDStatusDock(QWidget *parent = nullptr) : QWidget(parent), retryDotCount(0), m_connected(false), m_stop_ws(false) {
         QVBoxLayout *layout = new QVBoxLayout(this);
@@ -47,20 +45,20 @@ public:
         m_ws_client.init_asio();
 
         m_ws_client.set_open_handler([this](websocketpp::connection_hdl hdl) {
-            QMetaObject::invokeMethod(this, &CDStatusDock::onConnected, Qt::QueuedConnection);
+            QMetaObject::invokeMethod(this, [this](){ onConnected(); }, Qt::QueuedConnection);
         });
 
         m_ws_client.set_close_handler([this](websocketpp::connection_hdl hdl) {
-            QMetaObject::invokeMethod(this, &CDStatusDock::onDisconnected, Qt::QueuedConnection);
+            QMetaObject::invokeMethod(this, [this](){ onDisconnected(); }, Qt::QueuedConnection);
         });
 
         m_ws_client.set_fail_handler([this](websocketpp::connection_hdl hdl) {
-            QMetaObject::invokeMethod(this, &CDStatusDock::onDisconnected, Qt::QueuedConnection);
+            QMetaObject::invokeMethod(this, [this](){ onDisconnected(); }, Qt::QueuedConnection);
         });
 
         m_ws_client.set_message_handler([this](websocketpp::connection_hdl hdl, client::message_ptr msg) {
             QString message = QString::fromStdString(msg->get_payload());
-            QMetaObject::invokeMethod(this, "onMessageReceived", Qt::QueuedConnection, Q_ARG(QString, message));
+            QMetaObject::invokeMethod(this, [this, message](){ onMessageReceived(message); }, Qt::QueuedConnection);
         });
 
         m_ws_thread = std::thread([this]() {
@@ -91,7 +89,7 @@ public:
         }
     }
 
-public slots:
+private:
     void onConnected() {
         m_connected = true;
         reconnectTimer->stop();
@@ -124,7 +122,7 @@ public slots:
         updateRetryingLabel();
     }
 
-    Q_INVOKABLE void onMessageReceived(const QString &message) {
+    void onMessageReceived(const QString &message) {
         QJsonParseError parseError;
         QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8(), &parseError);
         if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
@@ -152,7 +150,6 @@ public slots:
         updateBackgroundColor(isRecording ? QColor("#228B22") : Qt::gray);
     }
 
-private:
     void updateBackgroundColor(const QColor &bgColor) {
         this->setStyleSheet(QString(
             "background-color: %1;"
@@ -210,4 +207,3 @@ MODULE_EXPORT const char *obs_module_name(void)
 {
     return obs_module_text("CD Rec Status");
 }
-#include "cd-rec-status.moc"
