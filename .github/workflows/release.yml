@@ -58,14 +58,14 @@ jobs:
           EOF
 
       - name: Build Plugin in Flatpak Sandbox
-        run: flatpak-builder --user --install-deps-from=flathub --force-clean build-dir plugin.json
+        run: flatpak-builder --user --install-deps-from=flathub --force-clean --keep-build-dirs build-dir plugin.json
 
       - name: Package Artifacts
         run: |
           mkdir -p release_package/cd-rec-status/bin/64bit
           mkdir -p release_package/cd-rec-status/data
 
-          find .flatpak-builder/build/cd-rec-status-* -name "cd-rec-status.so" -exec cp {} release_package/cd-rec-status/bin/64bit/ \;
+          find .flatpak-builder/build -name "cd-rec-status.so" -exec cp {} release_package/cd-rec-status/bin/64bit/ \;
 
           patchelf --force-rpath --set-rpath '$ORIGIN' release_package/cd-rec-status/bin/64bit/cd-rec-status.so
 
