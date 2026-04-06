@@ -52,13 +52,12 @@ jobs:
                   },
                   {
                       "name": "cd-rec-status",
-                      "buildsystem": "simple",
-                      "build-env": {
-                          "CMAKE_PREFIX_PATH": "/app/plugins/cd-rec-status/qtws:/app"
-                      },
-                      "build-commands": [
-                          "cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release",
-                          "cmake --build build"
+                      "buildsystem": "cmake-ninja",
+                      "builddir": true,
+                      "config-opts": [
+                          "-DENABLE_FRONTEND_API=ON",
+                          "-DENABLE_QT=ON",
+                          "-DCMAKE_PREFIX_PATH=/app/plugins/cd-rec-status/qtws;/app"
                       ],
                       "sources": [
                           {
