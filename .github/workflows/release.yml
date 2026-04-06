@@ -24,8 +24,6 @@ jobs:
 
       - name: Create Flatpak Manifest
         run: |
-          # This JSON file tells flatpak-builder exactly how to compile the plugin 
-          # against the OBS Studio runtime.
           cat <<EOF > plugin.json
           {
               "id": "com.obsproject.Studio.Plugin.CDRecStatus",
@@ -38,6 +36,17 @@ jobs:
                   "prefix": "/app/plugins/cd-rec-status"
               },
               "modules": [
+                  {
+                      "name": "qtwebsockets",
+                      "buildsystem": "cmake-ninja",
+                      "sources": [
+                          {
+                              "type": "archive",
+                              "url": "https://download.qt.io/official_releases/qt/6.8/6.8.2/submodules/qtwebsockets-everywhere-src-6.8.2.tar.xz",
+                              "sha256": "919df562ba3446c8393992d112085ad2d96d23aaf802b1cd7a30bf3ba2fe8cbe"
+                          }
+                      ]
+                  },
                   {
                       "name": "cd-rec-status",
                       "buildsystem": "cmake-ninja",
