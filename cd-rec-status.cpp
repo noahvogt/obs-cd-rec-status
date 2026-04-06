@@ -5,16 +5,27 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QDockWidget>
-#include <QWebSocket>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QColor>
+#include <thread>
+#include <mutex>
+#include <chrono>
+
+#define ASIO_STANDALONE
+#include <websocketpp/config/asio_no_tls_client.hpp>
+#include <websocketpp/client.hpp>
+
+// Use the asio_client config from asio_no_tls_client.hpp
+typedef websocketpp::client<websocketpp::config::asio_client> client;
 
 OBS_DECLARE_MODULE()
 OBS_MODULE_USE_DEFAULT_LOCALE("cd-rec-status", "en-US")
 
 class CDStatusDock : public QWidget {
+    Q_OBJECT
 public:
-    CDStatusDock(QWidget *parent = nullptr) : QWidget(parent), socket(new QWebSocket()), retryDotCount(0) {
+    CDStatusDock(QWidget *parent = nullptr) : QWidget(parent), retryDotCount(0), m_connected(false), m_stop_ws(false) {
         QVBoxLayout *layout = new QVBoxLayout(this);
         statusLabel = new QLabel("Connecting to websocket...", this);
         layout->addWidget(statusLabel);
@@ -22,7 +33,7 @@ public:
 
         retryDotCount = 0;
 
-        // Retry every 3s
+        // Reconnect every 3s if disconnected
         reconnectTimer = new QTimer(this);
         reconnectTimer->setInterval(3000);
         connect(reconnectTimer, &QTimer::timeout, this, &CDStatusDock::tryReconnect);
@@ -32,30 +43,65 @@ public:
         retryAnimationTimer->setInterval(500);
         connect(retryAnimationTimer, &QTimer::timeout, this, &CDStatusDock::updateRetryingLabel);
 
-        connect(socket, &QWebSocket::connected, this, &CDStatusDock::onConnected);
-        connect(socket, &QWebSocket::disconnected, this, &CDStatusDock::onDisconnected);
-        connect(socket, &QWebSocket::textMessageReceived, this, &CDStatusDock::onMessageReceived);
+        m_ws_client.clear_access_channels(websocketpp::log::alevel::all);
+        m_ws_client.init_asio();
 
-        socket->open(QUrl(QStringLiteral("ws://localhost:8765")));
+        m_ws_client.set_open_handler([this](websocketpp::connection_hdl hdl) {
+            QMetaObject::invokeMethod(this, &CDStatusDock::onConnected, Qt::QueuedConnection);
+        });
+
+        m_ws_client.set_close_handler([this](websocketpp::connection_hdl hdl) {
+            QMetaObject::invokeMethod(this, &CDStatusDock::onDisconnected, Qt::QueuedConnection);
+        });
+
+        m_ws_client.set_fail_handler([this](websocketpp::connection_hdl hdl) {
+            QMetaObject::invokeMethod(this, &CDStatusDock::onDisconnected, Qt::QueuedConnection);
+        });
+
+        m_ws_client.set_message_handler([this](websocketpp::connection_hdl hdl, client::message_ptr msg) {
+            QString message = QString::fromStdString(msg->get_payload());
+            QMetaObject::invokeMethod(this, "onMessageReceived", Qt::QueuedConnection, Q_ARG(QString, message));
+        });
+
+        m_ws_thread = std::thread([this]() {
+            while (!m_stop_ws) {
+                try {
+                    m_ws_client.run();
+                } catch (const std::exception & e) {
+                    blog(LOG_ERROR, "[cd-rec-status] WebSocket client run error: %s", e.what());
+                }
+                
+                if (m_stop_ws) break;
+                
+                m_ws_client.reset();
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+        });
+
+        tryReconnect();
     }
 
     ~CDStatusDock() {
         reconnectTimer->stop();
-	retryAnimationTimer->stop();
-        socket->close();
-        delete socket;
+        retryAnimationTimer->stop();
+        m_stop_ws = true;
+        m_ws_client.stop();
+        if (m_ws_thread.joinable()) {
+            m_ws_thread.join();
+        }
     }
 
-private slots:
+public slots:
     void onConnected() {
+        m_connected = true;
         reconnectTimer->stop();
         retryAnimationTimer->stop();
         statusLabel->setText("Connected to websocket");
         updateBackgroundColor(Qt::gray);
     }
 
-
     void onDisconnected() {
+        m_connected = false;
         retryDotCount = 0;
         reconnectTimer->start();
         retryAnimationTimer->start();
@@ -64,17 +110,21 @@ private slots:
     }
 
     void tryReconnect() {
-        if (socket->state() == QAbstractSocket::ConnectedState ||
-            socket->state() == QAbstractSocket::ConnectingState)
+        if (m_connected)
             return;
 
-        socket->abort();  // force close if half-open
-        socket->open(QUrl(QStringLiteral("ws://localhost:8765")));
+        websocketpp::lib::error_code ec;
+        client::connection_ptr con = m_ws_client.get_connection("ws://localhost:8765", ec);
+        if (ec) {
+            onDisconnected();
+            return;
+        }
 
+        m_ws_client.connect(con);
         updateRetryingLabel();
     }
 
-    void onMessageReceived(const QString &message) {
+    Q_INVOKABLE void onMessageReceived(const QString &message) {
         QJsonParseError parseError;
         QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8(), &parseError);
         if (parseError.error != QJsonParseError::NoError || !doc.isObject()) {
@@ -112,7 +162,6 @@ private:
     }
 
     bool isColorDark(const QColor &color) {
-        // Perceived brightness formula
         int brightness = (color.red() * 299 + color.green() * 587 + color.blue() * 114) / 1000;
         return brightness < 128;
     }
@@ -123,15 +172,17 @@ private:
         statusLabel->setText(QString("Disconnected from websocket\nRetrying%1").arg(dots));
     }
 
-
-
 private:
     QLabel *statusLabel;
-    QWebSocket *socket;
+    int retryDotCount;
 
     QTimer *reconnectTimer;
     QTimer *retryAnimationTimer;
-    int retryDotCount;
+
+    client m_ws_client;
+    std::thread m_ws_thread;
+    bool m_connected;
+    bool m_stop_ws;
 };
 
 static void *create_cd_status_dock(obs_source_t *) {
@@ -159,3 +210,4 @@ MODULE_EXPORT const char *obs_module_name(void)
 {
     return obs_module_text("CD Rec Status");
 }
+#include "cd-rec-status.moc"

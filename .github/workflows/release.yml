@@ -33,25 +33,17 @@ jobs:
               "sdk": "org.freedesktop.Sdk//25.08",
               "build-extension": true,
               "build-options": {
-                  "prefix": "/app/plugins/cd-rec-status"
+                  "prefix": "/app/plugins/cd-rec-status",
+                  "build-args": [
+                      "--share=network"
+                  ]
               },
               "modules": [
-                  {
-                      "name": "qtwebsockets",
-                      "buildsystem": "cmake-ninja",
-                      "sources": [
-                          {
-                              "type": "archive",
-                              "url": "https://download.qt.io/official_releases/qt/6.8/6.8.2/submodules/qtwebsockets-everywhere-src-6.8.2.tar.xz",
-                              "sha256": "919df562ba3446c8393992d112085ad2d96d23aaf802b1cd7a30bf3ba2fe8cbe"
-                          }
-                      ]
-                  },
                   {
                       "name": "cd-rec-status",
                       "buildsystem": "simple",
                       "build-commands": [
-                          "cmake -B build -G Ninja -DENABLE_FRONTEND_API=ON -DENABLE_QT=ON -DCMAKE_PREFIX_PATH=/app -DQt6WebSockets_DIR=/app/plugins/cd-rec-status/lib/cmake/Qt6WebSockets",
+                          "cmake -B build -G Ninja -DENABLE_FRONTEND_API=ON -DENABLE_QT=ON -DCMAKE_PREFIX_PATH=/app",
                           "cmake --build build"
                       ],
                       "sources": [
@@ -74,8 +66,6 @@ jobs:
           mkdir -p release_package/cd-rec-status/data
 
           find .flatpak-builder/build/cd-rec-status-* -name "cd-rec-status.so" -exec cp {} release_package/cd-rec-status/bin/64bit/ \;
-
-          find .flatpak-builder/build/qtwebsockets-* -name "libQt6WebSockets.so*" -exec cp -a {} release_package/cd-rec-status/bin/64bit/ \;
 
           patchelf --force-rpath --set-rpath '$ORIGIN' release_package/cd-rec-status/bin/64bit/cd-rec-status.so
 

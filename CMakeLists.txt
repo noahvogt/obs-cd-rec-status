@@ -15,23 +15,35 @@ add_library(${CMAKE_PROJECT_NAME} MODULE ${SOURCES})
 
 find_package(obs-frontend-api REQUIRED)
 find_package(Qt6 COMPONENTS Widgets Core)
-find_package(Qt6WebSockets REQUIRED)
+
+include(FetchContent)
+
+FetchContent_Declare(
+  asio
+  GIT_REPOSITORY https://github.com/chriskohlhoff/asio.git
+  GIT_TAG        asio-1-30-2
+)
+FetchContent_MakeAvailable(asio)
+
+FetchContent_Declare(
+  websocketpp
+  GIT_REPOSITORY https://github.com/zaphoyd/websocketpp.git
+  GIT_TAG        0.8.2
+)
+FetchContent_MakeAvailable(websocketpp)
+
+target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE ASIO_STANDALONE)
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
   OBS::libobs
   OBS::obs-frontend-api
   Qt6::Core
   Qt6::Widgets
-  Qt6::WebSockets
 )
-
-set_target_properties(
-  ${CMAKE_PROJECT_NAME}
-  PROPERTIES AUTOMOC ON AUTOUIC ON AUTORCC ON
-)
-
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${SOURCES})
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
-  "${CMAKE_SOURCE_DIR}/UI/obs-frontend-api")
+  "${CMAKE_SOURCE_DIR}/UI/obs-frontend-api"
+  ${asio_SOURCE_DIR}/asio/include
+  ${websocketpp_SOURCE_DIR}
+)
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES FOLDER "plugins/noahvogt" PREFIX "")
