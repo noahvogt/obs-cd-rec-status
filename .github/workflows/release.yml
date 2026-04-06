@@ -52,12 +52,10 @@ jobs:
                   },
                   {
                       "name": "cd-rec-status",
-                      "buildsystem": "cmake-ninja",
-                      "builddir": true,
-                      "config-opts": [
-                          "-DENABLE_FRONTEND_API=ON",
-                          "-DENABLE_QT=ON",
-                          "-DCMAKE_PREFIX_PATH=/app/plugins/cd-rec-status/qtws;/app"
+                      "buildsystem": "simple",
+                      "build-commands": [
+                          "cmake -B build -G Ninja -DENABLE_FRONTEND_API=ON -DENABLE_QT=ON -DCMAKE_PREFIX_PATH=/app -DQt6WebSockets_DIR=/app/plugins/cd-rec-status/qtws/lib/cmake/Qt6WebSockets",
+                          "cmake --build build"
                       ],
                       "sources": [
                           {
