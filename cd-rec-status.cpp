@@ -44,19 +44,19 @@ public:
         m_ws_client.clear_access_channels(websocketpp::log::alevel::all);
         m_ws_client.init_asio();
 
-        m_ws_client.set_open_handler([this](websocketpp::connection_hdl hdl) {
+        m_ws_client.set_open_handler([this](websocketpp::connection_hdl) {
             QMetaObject::invokeMethod(this, [this](){ onConnected(); }, Qt::QueuedConnection);
         });
 
-        m_ws_client.set_close_handler([this](websocketpp::connection_hdl hdl) {
+        m_ws_client.set_close_handler([this](websocketpp::connection_hdl) {
             QMetaObject::invokeMethod(this, [this](){ onDisconnected(); }, Qt::QueuedConnection);
         });
 
-        m_ws_client.set_fail_handler([this](websocketpp::connection_hdl hdl) {
+        m_ws_client.set_fail_handler([this](websocketpp::connection_hdl) {
             QMetaObject::invokeMethod(this, [this](){ onDisconnected(); }, Qt::QueuedConnection);
         });
 
-        m_ws_client.set_message_handler([this](websocketpp::connection_hdl hdl, client::message_ptr msg) {
+        m_ws_client.set_message_handler([this](websocketpp::connection_hdl, client::message_ptr msg) {
             QString message = QString::fromStdString(msg->get_payload());
             QMetaObject::invokeMethod(this, [this, message](){ onMessageReceived(message); }, Qt::QueuedConnection);
         });
