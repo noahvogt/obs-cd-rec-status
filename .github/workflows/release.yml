@@ -43,7 +43,7 @@ jobs:
                       "name": "cd-rec-status",
                       "buildsystem": "simple",
                       "build-commands": [
-                          "cmake -B build -G Ninja -DENABLE_FRONTEND_API=ON -DENABLE_QT=ON -DCMAKE_PREFIX_PATH=/app",
+                          "cmake -B build -G Ninja -DENABLE_FRONTEND_API=ON -DENABLE_QT=ON -DCMAKE_PREFIX_PATH=/app -DCMAKE_POLICY_VERSION_MINIMUM=3.5",
                           "cmake --build build"
                       ],
                       "sources": [
