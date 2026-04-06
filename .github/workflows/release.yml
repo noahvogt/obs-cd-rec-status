@@ -41,6 +41,7 @@ jobs:
                   {
                       "name": "cd-rec-status",
                       "buildsystem": "cmake-ninja",
+                      "builddir": true,
                       "config-opts": [
                           "-DENABLE_FRONTEND_API=ON",
                           "-DENABLE_QT=ON"
