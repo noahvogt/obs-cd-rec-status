@@ -16,10 +16,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Flatpak & flatpak-builder
+      - name: Install Flatpak & Utilities
         run: |
           sudo apt-get update
-          sudo apt-get install -y flatpak flatpak-builder
+          sudo apt-get install -y flatpak flatpak-builder patchelf
           flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
       - name: Create Flatpak Manifest
@@ -36,6 +36,9 @@ jobs:
                   {
                       "name": "qtwebsockets",
                       "buildsystem": "cmake-ninja",
+                      "build-options": {
+                          "prefix": "/app/qtws"
+                      },
                       "sources": [
                           {
                               "type": "archive",
@@ -50,7 +53,8 @@ jobs:
                       "builddir": true,
                       "config-opts": [
                           "-DENABLE_FRONTEND_API=ON",
-                          "-DENABLE_QT=ON"
+                          "-DENABLE_QT=ON",
+                          "-DCMAKE_PREFIX_PATH=/app/qtws"
                       ],
                       "sources": [
                           {
@@ -71,7 +75,11 @@ jobs:
           mkdir -p release_package/cd-rec-status/bin/64bit
           mkdir -p release_package/cd-rec-status/data
           
-          find .flatpak-builder/build/ -name "cd-rec-status.so" -exec cp {} release_package/cd-rec-status/bin/64bit/ \;
+          find .flatpak-builder/build/cd-rec-status-* -name "cd-rec-status.so" -exec cp {} release_package/cd-rec-status/bin/64bit/ \;
+
+          find .flatpak-builder/build/qtwebsockets-* -name "libQt6WebSockets.so*" -exec cp -a {} release_package/cd-rec-status/bin/64bit/ \;
+
+          patchelf --force-rpath --set-rpath '$ORIGIN' release_package/cd-rec-status/bin/64bit/cd-rec-status.so
           
           cp -r data/* release_package/cd-rec-status/data/
           
