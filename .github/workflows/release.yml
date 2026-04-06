@@ -31,11 +31,7 @@ jobs:
             libqt6websockets6-dev
 
       - name: Configure CMake
-        # Override the preset defaults so CMake knows to look for the Frontend API and Qt
-        run: >
-          cmake --preset ubuntu-ci-x86_64
-          -DENABLE_FRONTEND_API=ON
-          -DENABLE_QT=ON
+        run: cmake --preset ubuntu-ci-x86_64
 
       - name: Build Plugin
         run: cmake --build --preset ubuntu-ci-x86_64
