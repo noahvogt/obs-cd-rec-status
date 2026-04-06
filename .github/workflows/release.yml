@@ -23,7 +23,6 @@ jobs:
           flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
       - name: Create Flatpak Manifest
-- name: Create Flatpak Manifest
         run: |
           cat <<EOF > plugin.json
           {
