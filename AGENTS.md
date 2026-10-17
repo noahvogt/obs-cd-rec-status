@@ -5,10 +5,15 @@ An OBS Studio frontend plugin (C++17, Qt6, built from the official OBS plugin te
 ## Layout
 
 - `cd-rec-status.cpp` → the whole plugin: the `CDStatusDock` QWidget, a websocketpp client (standalone asio) on its own `std::thread`, reconnecting every 3 s, and JSON parsing via `QJsonDocument`. `obs_module_load()` registers the dock with `obs_frontend_add_custom_qdock`.
-- `CMakeLists.txt` → fetches `asio` (asio-1-30-2) and `websocketpp` (0.8.2) via `FetchContent`, links `OBS::libobs`, `OBS::obs-frontend-api`, Qt6. The project version is set here.
-- `cmake/`, `CMakePresets.json`, `buildspec.json` → mostly unchanged plugin template boilerplate. Its metadata (`plugintemplate-for-obs`, `Your Name Here`) was never filled in.
-- `data/locale/en-US.ini` → locale strings (currently empty).
-- `.github/workflows/release.yml` → **the actual build**. A pushed tag `v*` builds the plugin as a Flatpak extension against the `com.obsproject.Studio` runtime (SDK 25.08), copies `cd-rec-status.so` and `data/` into `cd-rec-status/{bin/64bit,data}`, sets the rpath to `$ORIGIN` and publishes `cd-rec-status-linux-x86_64.tar.gz` as a GitHub release.
+- `CMakeLists.txt` → fetches `asio` (asio-1-30-2) and `websocketpp` (0.8.2) via `FetchContent`, links `OBS::libobs`, `OBS::obs-frontend-api`, Qt6. `project()` takes its version from `buildspec.json`.
+- `buildspec.json` → plugin metadata (name, author, website, bundle ID) and the **only version field**. `cmake/` and `CMakePresets.json` are mostly unchanged plugin template boilerplate.
+- `data/locale/en-US.ini` → locale strings (`Description` for OBS's plugin list).
+- `.github/workflows/release.yml` → **the actual build**. A pushed tag `vMAJOR.MINOR.PATCH` writes that version into `buildspec.json` (other tag formats fail), builds the plugin as a Flatpak extension against the `com.obsproject.Studio` runtime (SDK 25.08), copies `cd-rec-status.so` and `data/` into `cd-rec-status/{bin/64bit,data}`, sets the rpath to `$ORIGIN` and publishes `cd-rec-status-linux-x86_64.tar.gz` as a GitHub release. A manual run (`workflow_dispatch`) only builds and uploads the artifact, without a release.
+
+## Versioning
+
+- The git tag is the source of truth. Don't bump the version in files by hand for a release; the workflow sets it from the tag. Keeping `buildspec.json` at the latest released version is enough for local builds.
+- Use manual workflow runs for CI/build experiments instead of pushing throwaway tags.
 - `.gitignore` uses a **whitelist** (`/*`, then `!…`). Any new top-level file or directory must be added there, otherwise git silently ignores it.
 
 ## Conventions
@@ -16,7 +21,7 @@ An OBS Studio frontend plugin (C++17, Qt6, built from the official OBS plugin te
 - **Threading:** websocketpp handlers run on the client thread. Every UI change must be marshalled to the Qt thread with `QMetaObject::invokeMethod(this, …, Qt::QueuedConnection)`, as the existing handlers do. Never touch widgets from the WebSocket thread.
 - Log with `blog(LOG_…, "[cd-rec-status] …")`.
 - Format C++ with `.clang-format` (clang-format ≥ 16) and CMake with `.gersemirc` (gersemi).
-- The README's "Building" section (in-tree build inside the OBS sources) is outdated. The release workflow is the reference build.
+- The release workflow is the reference build. Keep the README's "Installation" and "Building" sections in sync with it.
 - There are no tests. A local build needs the OBS Flatpak SDK, like in the workflow. A real check means loading the plugin into OBS while the `slidegen` WebSocket (or a small fake server that sends the JSON below) is running.
 
 ## Interface: status JSON

@@ -18,22 +18,27 @@ This plugin listens in on a websocket server on `ws://localhost:8765` from which
 }
 ```
 
-An example implemtation of such a websocket can be found [here](https://github.com/noahvogt/slidegen/blob/master/cd_recording_status_websocket.py).
+An example implementation of such a websocket can be found [here](https://github.com/noahvogt/slidegen/blob/master/cd_recording_status_websocket.py).
 
 It then adds a dock on the obs studio interface titled *CD Rec Status* that displays the state of the (ongoing) cd recording.
 
-## Building
-- checkout the [obs studio](https://github.com/obsproject/obs-studio) repository
-- `cd UI/frontend-plugins`
-- run `git clone https://github.com/noahvogt/obs-cd-rec-status.git cd-rec-status`
-- add the following line to the `CMakeLists.txt` file: `add_subdirectory(cd-rec-status)`
-- follow the [offical obs build instructions](https://github.com/obsproject/obs-studio/wiki/Install-Instructions#building-obs-studio) for your prefered platform
+## Installation
+Download `cd-rec-status-linux-x86_64.tar.gz` from the [latest release](https://github.com/noahvogt/obs-cd-rec-status/releases) and extract it into your OBS plugin directory. For the OBS Flatpak (`com.obsproject.Studio`) that is:
 
-You now have compiled OBS with the plugin. But you probably don't want to rebuild obs after every new release. So just find the `cd-rec-status.so` file in the build directory and put it into a plugin directory you can point your regular obs installation to. If you are unsure on how to structure the plugin directory, have a look at the releases on this github repository.
+```bash
+mkdir -p ~/.var/app/com.obsproject.Studio/config/obs-studio/plugins
+tar -xzf cd-rec-status-linux-x86_64.tar.gz -C ~/.var/app/com.obsproject.Studio/config/obs-studio/plugins/
+```
+
+This creates `cd-rec-status/bin/64bit/cd-rec-status.so` and `cd-rec-status/data/` in the plugin directory. Restart OBS afterwards. If the dock is hidden, enable it via the *Docks* menu.
+
+## Building
+Releases are built by the GitHub workflow in `.github/workflows/release.yml`, which runs whenever a tag of the form `vMAJOR.MINOR.PATCH` (e.g. `v1.2.0`) is pushed. It writes the version from the tag into `buildspec.json`, builds the plugin as a Flatpak extension against the `com.obsproject.Studio` runtime with `flatpak-builder`, packages `cd-rec-status.so` together with the `data` directory and publishes the tarball as a GitHub release. The workflow can also be started manually from the *Actions* tab; such a run only uploads the tarball as a build artifact and creates no release.
+
+To build locally, follow the same steps as the workflow: generate its `plugin.json` manifest and run `flatpak-builder` with it. When a new OBS Flatpak runtime is released and OBS no longer loads the plugin, push a new tag to build a matching release.
 
 ## Roadmap
 Possible changes in future releases:
 - add de locale
 - allow the configuration of hostname + port of the websocket via the obs gui
 - better text styling than just QLabels
-- add github workflow to automatically compile a new release (when needed by a new flatpak platform)

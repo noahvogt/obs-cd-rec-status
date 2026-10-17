@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.28...3.30)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/common/bootstrap.cmake" NO_POLICY_SCOPE)
 
-project(cd-rec-status VERSION 1.1.0)
+# the version comes from buildspec.json (set from the git tag by the release workflow)
+project(cd-rec-status VERSION ${_version})
 
 include(compilerconfig)
 include(defaults)
